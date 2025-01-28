@@ -5,6 +5,7 @@ using MediatR;
 using System.Linq.Expressions;
 using Application.Core;
 using API.Extentions;
+using API.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,7 @@ builder.Services.AddApplicationServices(builder.Configuration);
 
 var app = builder.Build();
 
+app.UseMiddleware<ExceptionMiddleware>();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
