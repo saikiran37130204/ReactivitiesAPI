@@ -9,7 +9,6 @@ namespace Application.Activities
 {
     public class Edit
     {
-        
         public class Command : IRequest<Result<Unit>>
         {
             public Activity Activity { get; set; }
