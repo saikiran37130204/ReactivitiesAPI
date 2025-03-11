@@ -1,15 +1,12 @@
-using Application.Activities;
-using Microsoft.EntityFrameworkCore;
-using Persistence;
-using MediatR;
-using System.Linq.Expressions;
-using Application.Core;
 using API.Extentions;
 using API.Middleware;
-using Microsoft.AspNetCore.Identity;
+using API.SignalR;
 using Domain;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Authorization;
+using Microsoft.EntityFrameworkCore;
+using Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,6 +37,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<ChatHub>("/chat");
 
 using var scope = app.Services.CreateScope();
 var services = scope.ServiceProvider;
