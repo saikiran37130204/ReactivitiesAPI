@@ -30,6 +30,7 @@ jobs:
         with:
           node-version: "20"
           cache: "npm"
+          cache-dependency-path: "client-app/package-lock.json" # This is the key fix
 
       # React build with enhanced error checking
       - name: Build React app
