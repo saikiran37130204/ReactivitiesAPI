@@ -36,10 +36,17 @@ jobs:
           npm run build
         working-directory: client-app
 
+      - name: Verify React build output
+        working-directory: client-app
+        run: |
+          echo "Build directory contents:"
+          ls -la dist/
+        shell: bash
+
       - name: Copy React build to API wwwroot
         run: |
           mkdir -p API/wwwroot
-          cp -r client-app/build/* API/wwwroot/
+          cp -r client-app/dist/* API/wwwroot/
 
       - name: Set up .NET Core
         uses: actions/setup-dotnet@v4
