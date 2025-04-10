@@ -13,10 +13,10 @@ jobs:
       contents: read
 
     steps:
-      # Checkout main API repository
+      # Checkout main repository
       - uses: actions/checkout@v4
 
-      # Checkout React app repository (with subdirectory)
+      # Checkout React app
       - name: Checkout React app
         uses: actions/checkout@v4
         with:
@@ -24,7 +24,7 @@ jobs:
           path: reactivities-client
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Node.js setup with proper paths
+      # Node.js setup
       - name: Set up NodeJS
         uses: actions/setup-node@v3
         with:
@@ -32,19 +32,19 @@ jobs:
           cache: 'npm'
           cache-dependency-path: 'reactivities-client/client-app/package-lock.json'
 
-      # Install and build React app (pointing to client-app subdirectory)
-      - name: Install and build React app
+      # Build React app with modified Vite output
+      - name: Build React app
         working-directory: reactivities-client/client-app
         run: |
-          echo "Current directory: $(pwd)"
-          echo "Directory contents:"
-          ls -la
+          # Temporarily modify Vite config to output to dist folder first
+          echo "Modifying Vite config for CI build..."
+          sed -i 's|outDir: .*|outDir: "../dist",|' vite.config.ts
           
           npm ci --no-audit
           npm run build
           
           echo "Build output:"
-          ls -la dist/
+          ls -la ../dist/
         shell: bash
 
       # .NET setup
@@ -53,14 +53,21 @@ jobs:
         with:
           dotnet-version: "8.x"
 
-      # Copy React build from correct path
+      # Copy from temporary dist folder to wwwroot
       - name: Copy React build
         run: |
           mkdir -p API/wwwroot
-          cp -r reactivities-client/client-app/dist/* API/wwwroot/
+          cp -r reactivities-client/dist/* API/wwwroot/
           
           echo "Copied files:"
           ls -la API/wwwroot/
+        shell: bash
+
+      # Restore original Vite config
+      - name: Restore Vite config
+        working-directory: reactivities-client/client-app
+        run: |
+          git checkout -- vite.config.ts
         shell: bash
 
       # .NET build and publish
