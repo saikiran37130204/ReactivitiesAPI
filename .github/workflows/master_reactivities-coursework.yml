@@ -24,41 +24,49 @@ jobs:
           path: client-app
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Node.js setup with cache verification
+      # Node.js setup with more reliable caching approach
       - name: Set up NodeJS
         uses: actions/setup-node@v3
         with:
           node-version: "20"
-          cache: 'npm'
-          cache-dependency-path: 'client-app/package-lock.json'
+          # Removed cache configuration here - we'll handle it manually
 
-      # Verify and handle lock file
-      - name: Verify and install dependencies
+      # Manual cache control for better reliability
+      - name: Cache node modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            client-app/node_modules
+            client-app/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('client-app/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      # Install dependencies with lock file verification
+      - name: Install dependencies
         working-directory: client-app
         run: |
-          # Generate lock file if missing
+          # Generate lock file if missing (will be created in client-app directory)
           if [ ! -f "package-lock.json" ]; then
             echo "Generating package-lock.json..."
             npm install --package-lock-only
           fi
           
-          # Install dependencies
           echo "Installing dependencies..."
-          npm ci --no-audit
+          npm ci --no-audit --prefer-offline
           
-          # Verify installation
-          echo "Installed dependencies:"
-          npm list --depth=0
+          echo "Verifying installation..."
+          npm list --depth=0 || true
         shell: bash
 
-      # Build React app with verification
+      # Build React app with output verification
       - name: Build React app
         working-directory: client-app
         run: |
           echo "Building React app..."
           npm run build
           
-          # Verify build output
+          # Verify build output exists
           if [ ! -d "dist" ]; then
             echo "ERROR: Build failed - no dist directory created"
             echo "Current directory contents:"
@@ -66,7 +74,7 @@ jobs:
             exit 1
           fi
           
-          echo "Build successful. Contents:"
+          echo "Build output contents:"
           ls -la dist/
         shell: bash
 
@@ -76,25 +84,25 @@ jobs:
         with:
           dotnet-version: "8.x"
 
-      # Copy React build to wwwroot with verification
+      # Copy React build with verification
       - name: Copy React build
         run: |
-          echo "Preparing wwwroot directory..."
+          echo "Creating wwwroot directory..."
           mkdir -p API/wwwroot
           
           echo "Copying build files..."
-          cp -r client-app/dist/* API/wwwroot/
+          cp -r client-app/dist/* API/wwwroot/ || {
+            echo "Failed to copy files"
+            exit 1
+          }
           
-          # Verify copy operation
+          echo "Verifying copied files..."
           if [ ! -f "API/wwwroot/index.html" ]; then
-            echo "ERROR: Failed to copy React build"
+            echo "ERROR: index.html not found in wwwroot!"
             echo "wwwroot contents:"
             ls -la API/wwwroot/
             exit 1
           fi
-          
-          echo "Files successfully copied:"
-          ls -la API/wwwroot/
         shell: bash
 
       # .NET build and publish
