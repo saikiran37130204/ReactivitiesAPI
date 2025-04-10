@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - master
-  workflow_dispatch:
+  workflow-dispatch:
 
 jobs:
   build:
@@ -16,42 +16,44 @@ jobs:
       # Checkout the .NET API repository
       - uses: actions/checkout@v4
 
-      # Checkout the React app repository into a subdirectory
+      # Checkout the React app repository
       - name: Checkout React app
         uses: actions/checkout@v4
         with:
           repository: saikiran37130204/ReactivitiesClientSide
           path: client-app
-          token: ${{ secrets.GITHUB_TOKEN }} # Needed for private repos
+          token: ${{ secrets.GITHUB_TOKEN }}
 
+      # Node.js setup and React build
       - name: Set up NodeJS
         uses: actions/setup-node@v3
         with:
           node-version: "20"
+          cache: 'npm'
 
-      - name: Install deps and build react app
+      - name: Install and build React app
+        working-directory: client-app
         run: |
-          cd client-app
-          npm install
+          echo "Current directory: $(pwd)"
+          npm ci
           npm run build
-        working-directory: client-app
-
-      - name: Verify React build output
-        working-directory: client-app
-        run: |
           echo "Build directory contents:"
           ls -la dist/
         shell: bash
 
-      - name: Copy React build to API wwwroot
-        run: |
-          mkdir -p API/wwwroot
-          cp -r client-app/dist/* API/wwwroot/
-
+      # .NET setup and build
       - name: Set up .NET Core
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.x"
+
+      - name: Copy React build to wwwroot
+        run: |
+          mkdir -p API/wwwroot
+          cp -r client-app/dist/* API/wwwroot/
+          echo "Copied files to wwwroot:"
+          ls -la API/wwwroot/
+        shell: bash
 
       - name: Build with dotnet
         run: dotnet build --configuration Release
