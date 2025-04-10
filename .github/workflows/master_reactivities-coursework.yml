@@ -13,68 +13,37 @@ jobs:
       contents: read
 
     steps:
-      # Checkout main repository
+      # Checkout main API repository
       - uses: actions/checkout@v4
 
-      # Checkout React app from separate repository
+      # Checkout React app repository (with subdirectory)
       - name: Checkout React app
         uses: actions/checkout@v4
         with:
           repository: saikiran37130204/ReactivitiesClientSide
-          path: client-app
+          path: reactivities-client
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Node.js setup with more reliable caching approach
+      # Node.js setup with proper paths
       - name: Set up NodeJS
         uses: actions/setup-node@v3
         with:
           node-version: "20"
-          # Removed cache configuration here - we'll handle it manually
+          cache: 'npm'
+          cache-dependency-path: 'reactivities-client/client-app/package-lock.json'
 
-      # Manual cache control for better reliability
-      - name: Cache node modules
-        uses: actions/cache@v3
-        with:
-          path: |
-            client-app/node_modules
-            client-app/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('client-app/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
-      # Install dependencies with lock file verification
-      - name: Install dependencies
-        working-directory: client-app
+      # Install and build React app (pointing to client-app subdirectory)
+      - name: Install and build React app
+        working-directory: reactivities-client/client-app
         run: |
-          # Generate lock file if missing (will be created in client-app directory)
-          if [ ! -f "package-lock.json" ]; then
-            echo "Generating package-lock.json..."
-            npm install --package-lock-only
-          fi
+          echo "Current directory: $(pwd)"
+          echo "Directory contents:"
+          ls -la
           
-          echo "Installing dependencies..."
-          npm ci --no-audit --prefer-offline
-          
-          echo "Verifying installation..."
-          npm list --depth=0 || true
-        shell: bash
-
-      # Build React app with output verification
-      - name: Build React app
-        working-directory: client-app
-        run: |
-          echo "Building React app..."
+          npm ci --no-audit
           npm run build
           
-          # Verify build output exists
-          if [ ! -d "dist" ]; then
-            echo "ERROR: Build failed - no dist directory created"
-            echo "Current directory contents:"
-            ls -la
-            exit 1
-          fi
-          
-          echo "Build output contents:"
+          echo "Build output:"
           ls -la dist/
         shell: bash
 
@@ -84,25 +53,14 @@ jobs:
         with:
           dotnet-version: "8.x"
 
-      # Copy React build with verification
+      # Copy React build from correct path
       - name: Copy React build
         run: |
-          echo "Creating wwwroot directory..."
           mkdir -p API/wwwroot
+          cp -r reactivities-client/client-app/dist/* API/wwwroot/
           
-          echo "Copying build files..."
-          cp -r client-app/dist/* API/wwwroot/ || {
-            echo "Failed to copy files"
-            exit 1
-          }
-          
-          echo "Verifying copied files..."
-          if [ ! -f "API/wwwroot/index.html" ]; then
-            echo "ERROR: index.html not found in wwwroot!"
-            echo "wwwroot contents:"
-            ls -la API/wwwroot/
-            exit 1
-          fi
+          echo "Copied files:"
+          ls -la API/wwwroot/
         shell: bash
 
       # .NET build and publish
