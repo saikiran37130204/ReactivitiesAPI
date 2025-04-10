@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - master
-  workflow-dispatch:
+  workflow_dispatch:
 
 jobs:
   build:
@@ -13,10 +13,10 @@ jobs:
       contents: read
 
     steps:
-      # Checkout the .NET API repository
+      # Checkout main repository
       - uses: actions/checkout@v4
 
-      # Checkout the React app repository
+      # Checkout React app from separate repository
       - name: Checkout React app
         uses: actions/checkout@v4
         with:
@@ -24,44 +24,68 @@ jobs:
           path: client-app
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Node.js setup and React build
+      # Node.js setup with caching
       - name: Set up NodeJS
         uses: actions/setup-node@v3
         with:
           node-version: "20"
-          cache: 'npm'
+          cache: "npm"
 
-      - name: Install and build React app
+      # React build with enhanced error checking
+      - name: Build React app
         working-directory: client-app
         run: |
-          echo "Current directory: $(pwd)"
+          echo "=== Starting React build ==="
+          echo "Node version: $(node --version)"
+          echo "NPM version: $(npm --version)"
+
           npm ci
           npm run build
-          echo "Build directory contents:"
+
+          echo "=== Build output verification ==="
+          if [ ! -d "dist" ]; then
+            echo "ERROR: dist directory not found!"
+            echo "Current directory contents:"
+            ls -la
+            exit 1
+          fi
+          echo "Build successful. dist contents:"
           ls -la dist/
         shell: bash
 
-      # .NET setup and build
+      # .NET setup
       - name: Set up .NET Core
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.x"
 
-      - name: Copy React build to wwwroot
+      # Copy React build to wwwroot with verification
+      - name: Copy React build
         run: |
+          echo "=== Copying React build ==="
           mkdir -p API/wwwroot
+          echo "Source directory contents:"
+          ls -la client-app/dist/
+
           cp -r client-app/dist/* API/wwwroot/
-          echo "Copied files to wwwroot:"
+
+          echo "Destination directory contents:"
           ls -la API/wwwroot/
+
+          if [ ! -f "API/wwwroot/index.html" ]; then
+            echo "ERROR: index.html not found in wwwroot!"
+            exit 1
+          fi
         shell: bash
 
+      # .NET build and publish
       - name: Build with dotnet
         run: dotnet build --configuration Release
 
       - name: dotnet publish
         run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}/myapp"
 
-      - name: Upload artifact for deployment job
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: .net-app
@@ -78,7 +102,7 @@ jobs:
       contents: read
 
     steps:
-      - name: Download artifact from build job
+      - name: Download artifact
         uses: actions/download-artifact@v4
         with:
           name: .net-app
