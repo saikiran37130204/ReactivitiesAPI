@@ -4,11 +4,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Persistence
 {
-    public class DataContext : IdentityDbContext<AppUser>
+    public class DataContext(DbContextOptions options) : IdentityDbContext<AppUser>(options)
     {
-        public DataContext(DbContextOptions options) : base(options)
-        {
-        }
         public DbSet<Activity> Activities { get; set; }
         public DbSet<ActivityAttendee> ActivitiesAttendees { get; set; }
         public DbSet<Photo> Photos { get; set; }
@@ -47,7 +44,7 @@ namespace Persistence
                 b.HasOne(t => t.Target)
                 .WithMany(f => f.Followers)
                 .HasForeignKey(f => f.TargetId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.NoAction);
             });
 
 

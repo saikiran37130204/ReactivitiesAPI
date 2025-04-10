@@ -19,7 +19,14 @@ namespace API.Extentions
                 opt.User.RequireUniqueEmail = true;
             }).AddEntityFrameworkStores<DataContext>();
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["TokenKey"]));
+            var tokenKey = config["TokenKey"];
+            if (string.IsNullOrEmpty(tokenKey))
+            {
+                throw new Exception("TokenKey is not configured");
+            }
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(tokenKey));
+
+            //var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["TokenKey"]));
 
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(opt =>
             {
@@ -44,13 +51,11 @@ namespace API.Extentions
                     }
                 };
             });
-            services.AddAuthorization(opt =>
-            {
-                opt.AddPolicy("IsActivityHost", policy =>
+            services.AddAuthorizationBuilder()
+                .AddPolicy("IsActivityHost", policy =>
                 {
                     policy.Requirements.Add(new IsHostRequirement());
                 });
-            });
             services.AddTransient<IAuthorizationHandler,IsHostRequirementHandler>();
             services.AddScoped<TokenService>();
 

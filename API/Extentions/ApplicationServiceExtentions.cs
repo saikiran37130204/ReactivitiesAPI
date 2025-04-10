@@ -15,12 +15,19 @@ namespace API.Extentions
         public static IServiceCollection AddApplicationServices(this IServiceCollection services,IConfiguration config)
         {
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-           services.AddEndpointsApiExplorer();
-           services.AddSwaggerGen();
-            services.AddDbContext<DataContext>(opt =>
-            {
-                opt.UseSqlite(config.GetConnectionString("DefaultConnection"));
-            });
+            services.AddEndpointsApiExplorer();
+            services.AddSwaggerGen();
+            
+            services.AddDbContext<DataContext>(options =>
+            options.UseSqlServer(
+            config.GetConnectionString("DefaultConnection"),
+            sqlServerOptions => sqlServerOptions.EnableRetryOnFailure(
+            maxRetryCount: 5, // Number of retries
+            maxRetryDelay: TimeSpan.FromSeconds(30), // Delay between retries
+            errorNumbersToAdd: null))); // Default transient errors
+
+            
+
             services.AddCors(opt =>
             {
                 opt.AddPolicy("CorsPolicy", policy =>

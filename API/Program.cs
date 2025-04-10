@@ -10,6 +10,12 @@ using Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
+Console.WriteLine("### LOADED CONFIGURATION ###");
+foreach (var config in builder.Configuration.AsEnumerable())
+{
+    Console.WriteLine($"{config.Key}: {config.Value}");
+}
+
 // Add services to the container.
 
 builder.Services.AddControllers(opt =>
@@ -36,8 +42,12 @@ app.UseAuthentication();
 
 app.UseAuthorization();
 
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.MapControllers();
 app.MapHub<ChatHub>("/chat");
+app.MapFallbackToController("Index", "Fallback");
 
 using var scope = app.Services.CreateScope();
 var services = scope.ServiceProvider;
