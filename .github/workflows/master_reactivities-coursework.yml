@@ -15,19 +15,19 @@ jobs:
     steps:
       # Checkout the .NET API repository
       - uses: actions/checkout@v4
-      
+
       # Checkout the React app repository into a subdirectory
       - name: Checkout React app
         uses: actions/checkout@v4
         with:
-          repository: your-github-username/reactivitiesclientside
+          repository: saikiran37130204/ReactivitiesClientSide
           path: client-app
           token: ${{ secrets.GITHUB_TOKEN }} # Needed for private repos
 
       - name: Set up NodeJS
         uses: actions/setup-node@v3
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: Install deps and build react app
         run: |
@@ -44,7 +44,7 @@ jobs:
       - name: Set up .NET Core
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.x'
+          dotnet-version: "8.x"
 
       - name: Build with dotnet
         run: dotnet build --configuration Release
@@ -62,7 +62,7 @@ jobs:
     runs-on: windows-latest
     needs: build
     environment:
-      name: 'Production'
+      name: "Production"
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
       id-token: write
@@ -73,7 +73,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: .net-app
-      
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -85,6 +85,6 @@ jobs:
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'Reactivities-coursework'
-          slot-name: 'Production'
+          app-name: "Reactivities-coursework"
+          slot-name: "Production"
           package: .
