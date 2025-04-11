@@ -13,10 +13,8 @@ jobs:
       contents: read
 
     steps:
-      # Checkout main repository
       - uses: actions/checkout@v4
 
-      # Checkout React app
       - name: Checkout React app
         uses: actions/checkout@v4
         with:
@@ -24,58 +22,82 @@ jobs:
           path: reactivities-client
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Node.js setup
+      - name: Debug folder structure
+        run: |
+          echo "ReactivitiesAPI:"
+          ls -la .
+          echo "reactivities-client:"
+          ls -la reactivities-client/
+          echo "client-app:"
+          ls -la reactivities-client/client-app/
+        shell: bash
+
       - name: Set up NodeJS
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: 'npm'
           cache-dependency-path: 'reactivities-client/client-app/package-lock.json'
 
-      # Build React app with modified Vite output
       - name: Build React app
         working-directory: reactivities-client/client-app
         run: |
-          # Temporarily modify Vite config to output to dist folder first
-          echo "Modifying Vite config for CI build..."
+          echo "Modifying Vite config..."
           sed -i 's|outDir: .*|outDir: "../dist",|' vite.config.ts
-          
           npm ci --no-audit
           npm run build
-          
           echo "Build output:"
           ls -la ../dist/
+          ls -la ../dist/assets/
+          if [ ! -f ../dist/index.html ]; then
+            echo "Error: React build failed - index.html not found"
+            exit 1
+          fi
+          if [ ! -f ../dist/assets/index-*.js ]; then
+            echo "Error: React build failed - main JS file not found"
+            exit 1
+          fi
         shell: bash
 
-      # .NET setup
       - name: Set up .NET Core
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.x"
 
-      # Copy from temporary dist folder to wwwroot
       - name: Copy React build
         run: |
           mkdir -p API/wwwroot
+          rm -rf reactivities-client/dist/vite.svg || true
           cp -r reactivities-client/dist/* API/wwwroot/
-          
           echo "Copied files:"
           ls -la API/wwwroot/
+          ls -la API/wwwroot/assets/
+          if [ ! -f API/wwwroot/index.html ]; then
+            echo "Error: Copy failed - index.html not found"
+            exit 1
+          fi
         shell: bash
 
-      # Restore original Vite config
       - name: Restore Vite config
         working-directory: reactivities-client/client-app
         run: |
           git checkout -- vite.config.ts
         shell: bash
 
-      # .NET build and publish
       - name: Build with dotnet
         run: dotnet build --configuration Release
 
       - name: dotnet publish
-        run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}/myapp"
+        run: |
+          dotnet publish API/API.csproj -c Release -o "${{env.DOTNET_ROOT}}/myapp" --no-restore
+          echo "Published files:"
+          dir "${{env.DOTNET_ROOT}}\myapp"
+          dir "${{env.DOTNET_ROOT}}\myapp\wwwroot"
+          if [ ! -f "${{env.DOTNET_ROOT}}/myapp/wwwroot/index.html ]; then
+            echo "Error: Publish failed - index.html not found"
+            exit 1
+          fi
+        shell: cmd
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
