@@ -22,16 +22,6 @@ jobs:
           path: reactivities-client
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Debug folder structure
-        run: |
-          echo "ReactivitiesAPI:"
-          ls -la .
-          echo "reactivities-client:"
-          ls -la reactivities-client/
-          echo "client-app:"
-          ls -la reactivities-client/client-app/
-        shell: bash
-
       - name: Set up NodeJS
         uses: actions/setup-node@v4
         with:
@@ -67,6 +57,7 @@ jobs:
       - name: Copy React build
         run: |
           mkdir -p API/wwwroot
+          rm -rf reactivities-client/dist/Asserts || true
           rm -rf reactivities-client/dist/vite.svg || true
           cp -r reactivities-client/dist/* API/wwwroot/
           echo "Copied files:"
@@ -74,6 +65,10 @@ jobs:
           ls -la API/wwwroot/assets/
           if [ ! -f API/wwwroot/index.html ]; then
             echo "Error: Copy failed - index.html not found"
+            exit 1
+          fi
+          if [ ! -d API/wwwroot/assets ]; then
+            echo "Error: Copy failed - assets folder not found"
             exit 1
           fi
         shell: bash
@@ -93,10 +88,10 @@ jobs:
           echo "Published files:"
           dir "${{env.DOTNET_ROOT}}\myapp"
           dir "${{env.DOTNET_ROOT}}\myapp\wwwroot"
-          if [ ! -f "${{env.DOTNET_ROOT}}/myapp/wwwroot/index.html ]; then
+          if not exist "${{env.DOTNET_ROOT}}\myapp\wwwroot\index.html" (
             echo "Error: Publish failed - index.html not found"
-            exit 1
-          fi
+            exit /b 1
+          )
         shell: cmd
 
       - name: Upload artifact
