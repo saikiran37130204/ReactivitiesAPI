@@ -34,17 +34,18 @@ jobs:
         run: |
           echo "Modifying Vite config..."
           sed -i 's|outDir: .*|outDir: "../dist",|' vite.config.ts
+          sed -i 's|assetsDir: .*|assetsDir: "assets",|' vite.config.ts
           npm ci --no-audit
           npm run build
-          echo "Build output:"
+          echo "Build output structure:"
           ls -la ../dist/
-          ls -la ../dist/assets/
+          find ../dist -type f -print
           if [ ! -f ../dist/index.html ]; then
             echo "Error: React build failed - index.html not found"
             exit 1
           fi
-          if [ ! -f ../dist/assets/index-*.js ]; then
-            echo "Error: React build failed - main JS file not found"
+          if [ ! -d ../dist/assets ]; then
+            echo "Error: React build failed - assets folder not found"
             exit 1
           fi
         shell: bash
@@ -56,13 +57,21 @@ jobs:
 
       - name: Copy React build
         run: |
+          echo "Preparing wwwroot directory..."
           mkdir -p API/wwwroot
-          rm -rf reactivities-client/dist/assets || true
-          rm -rf reactivities-client/dist/vite.svg || true
+          
+          echo "Copying React build files..."
           cp -r reactivities-client/dist/* API/wwwroot/
-          echo "Copied files:"
+          
+          # Handle potential case sensitivity issues
+          if [ -d "API/wwwroot/Assets" ]; then
+            mv API/wwwroot/Assets API/wwwroot/assets
+          fi
+          
+          echo "Copied files structure:"
           ls -la API/wwwroot/
           ls -la API/wwwroot/assets/
+          
           if [ ! -f API/wwwroot/index.html ]; then
             echo "Error: Copy failed - index.html not found"
             exit 1
@@ -85,11 +94,16 @@ jobs:
       - name: dotnet publish
         run: |
           dotnet publish API/API.csproj -c Release -o "${{env.DOTNET_ROOT}}/myapp" --no-restore
-          echo "Published files:"
+          echo "Published files structure:"
           dir "${{env.DOTNET_ROOT}}\myapp"
           dir "${{env.DOTNET_ROOT}}\myapp\wwwroot"
+          dir "${{env.DOTNET_ROOT}}\myapp\wwwroot\assets"
           if not exist "${{env.DOTNET_ROOT}}\myapp\wwwroot\index.html" (
             echo "Error: Publish failed - index.html not found"
+            exit /b 1
+          )
+          if not exist "${{env.DOTNET_ROOT}}\myapp\wwwroot\assets" (
+            echo "Error: Publish failed - assets folder not found"
             exit /b 1
           )
         shell: cmd
