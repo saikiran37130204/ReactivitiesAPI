@@ -26,8 +26,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: 'npm'
-          cache-dependency-path: 'reactivities-client/client-app/package-lock.json'
+          cache: "npm"
+          cache-dependency-path: "reactivities-client/client-app/package-lock.json"
 
       - name: Build React app
         working-directory: reactivities-client/client-app
@@ -57,7 +57,7 @@ jobs:
       - name: Copy React build
         run: |
           mkdir -p API/wwwroot
-          rm -rf reactivities-client/dist/Asserts || true
+          rm -rf reactivities-client/dist/assets || true
           rm -rf reactivities-client/dist/vite.svg || true
           cp -r reactivities-client/dist/* API/wwwroot/
           echo "Copied files:"
