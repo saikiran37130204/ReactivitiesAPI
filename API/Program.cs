@@ -31,6 +31,10 @@ var app = builder.Build();
 
 app.UseMiddleware<ExceptionMiddleware>();
 
+
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.UseXContentTypeOptions();
 app.UseReferrerPolicy(opt => opt.NoReferrer());
 app.UseXXssProtection(opt=>opt.EnabledWithBlockMode());
@@ -68,8 +72,7 @@ app.UseAuthentication();
 
 app.UseAuthorization();
 
-app.UseDefaultFiles();
-app.UseStaticFiles();
+
 
 app.MapControllers();
 app.MapHub<ChatHub>("/chat");
