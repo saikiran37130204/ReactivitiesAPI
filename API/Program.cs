@@ -10,6 +10,20 @@ using Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Enforce HTTPS
+builder.Services.AddHttpsRedirection(options => {
+    options.HttpsPort = 5000; // Your HTTPS port
+});
+
+builder.WebHost.ConfigureKestrel(serverOptions => {
+    serverOptions.ListenLocalhost(5000, listenOptions => {
+        listenOptions.UseHttps();
+    });
+    // Remove HTTP if not needed
+    // serverOptions.ListenLocalhost(5001); 
+});
+
+
 Console.WriteLine("### LOADED CONFIGURATION ###");
 foreach (var config in builder.Configuration.AsEnumerable())
 {
@@ -31,9 +45,17 @@ var app = builder.Build();
 
 app.UseMiddleware<ExceptionMiddleware>();
 
+app.UseHttpsRedirection();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
+}
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
+
+app.UseRouting();
 
 app.UseXContentTypeOptions();
 app.UseReferrerPolicy(opt => opt.NoReferrer());
