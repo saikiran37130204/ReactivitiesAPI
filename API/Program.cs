@@ -65,14 +65,29 @@ app.UseCsp(opt => opt
     .BlockAllMixedContent()
     .StyleSources(s => s.Self()
         .CustomSources("https://fonts.googleapis.com")
-        .UnsafeInline()) // Only if you must have inline styles
+        .UnsafeInline())
     .FontSources(s => s.Self()
         .CustomSources("https://fonts.gstatic.com", "data:"))
     .FormActions(s => s.Self())
     .FrameAncestors(s => s.Self())
     .ImageSources(s => s.Self()
-        .CustomSources("blob:", "data:","https://res.cloudinary.com","https://platform-lookaside.fbsbx.com"))
-    .ScriptSources(s => s.Self().CustomSources("https://connect.facebook.net"))
+        .CustomSources(
+            "blob:",
+            "data:",
+            "https://res.cloudinary.com",
+            "https://platform-lookaside.fbsbx.com", // Facebook's CDN for profile images
+            "https://*.facebook.com" // Wildcard for all Facebook domains
+        ))
+    .ScriptSources(s => s.Self()
+        .CustomSources(
+            "https://connect.facebook.net", // Facebook SDK
+            "https://*.facebook.com" // Additional Facebook domains
+        ))
+    .ConnectSources(s => s.Self()
+        .CustomSources(
+            "https://graph.facebook.com", // For API calls
+            "https://*.facebook.com"
+        ))
 );
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
