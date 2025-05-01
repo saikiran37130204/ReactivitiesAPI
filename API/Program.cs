@@ -103,6 +103,17 @@ else
        await next.Invoke();
     });
 }
+app.UseCookiePolicy();
+
+app.Use(async (context, next) =>
+{
+    await next();
+    if (context.Response.StatusCode == 401 && context.GetEndpoint()?.Metadata.GetMetadata<AllowAnonymousAttribute>() != null)
+    {
+        context.Response.Headers.Remove("WWW-Authenticate");
+    }
+});
+
 app.UseCors("CorsPolicy");
 
 app.UseAuthentication();

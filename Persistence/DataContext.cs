@@ -11,6 +11,7 @@ namespace Persistence
         public DbSet<Photo> Photos { get; set; }
         public DbSet<Comment> Comments { get; set; }
         public DbSet<UserFollowing> UsersFollowings { get; set; }
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -46,6 +47,12 @@ namespace Persistence
                 .HasForeignKey(f => f.TargetId)
                 .OnDelete(DeleteBehavior.NoAction);
             });
+
+            builder.Entity<RefreshToken>()
+                .HasOne(u => u.AppUser)
+                .WithMany(r => r.RefreshTokens)
+                .HasForeignKey(r => r.AppUserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
 
         }
